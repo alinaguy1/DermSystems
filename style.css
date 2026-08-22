@@ -1558,6 +1558,14 @@ li.question-container.checked .box::after {
     display: flex;
   }
 
+  .nav-links a:hover,
+  .nav-links a.active {
+    opacity: 1;
+  }
+  .nav-links a::after {
+    opacity: 0;
+  }
+
   /* Hero: text first, image below */
   .hero {
     flex-direction: column;
@@ -1682,11 +1690,13 @@ li.question-container.checked .box::after {
     padding: 4rem var(--side-pad);
 
     .ts-box {
-      /* 50px row-gap felt huge once the cards stack vertically */
-      gap: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      margin-top: 40px;
+      margin-bottom: -60px;
     }
     .ts-box-item {
-      margin-top: 0;
+      margin-top: -20px;
     }
   }
 
