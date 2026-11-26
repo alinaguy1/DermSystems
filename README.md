@@ -1,56 +1,95 @@
-# DermSystems website redesign
+# DermSystems — existing-site upgrade
 
-A responsive, redesigned static website plus a Supabase-powered admin dashboard. Original DermSystems image assets are retained. The interactive 7-point skincare checklist and original service/pricing/resource copy are included.
+This is the existing static HTML/CSS/vanilla-JavaScript website, upgraded in place. It is not a framework migration or a replacement Supabase project.
 
-## Files
-- `index.html`, `style.css`, `app.js`: public website
-- `admin.html`, `admin.css`, `admin.js`: content dashboard at `/admin.html`
-- `supabase-schema.sql`: database tables, row-level security policies and storage bucket
-- `supabase-config.example.js`, `email-config.example.js`: configuration templates
-- `images/`: supplied image and logo assets
+## Project structure
 
-## Important: connect the live services
-The supplied ZIP did not contain PDF files, Supabase credentials, or an email service configuration. The two original free resource cards are retained; upload the actual PDFs in Admin → File library, then add them as Resources in Website content.
+- `index.html`, `style.css`, `app.js` — public website.
+- `admin.html`, `admin.css`, `admin.js` — Supabase-authenticated admin dashboard.
+- `images/` — original brand and content images.
+- `documents/` — original downloadable PDF resources.
+- `supabase-config.js` — existing browser Supabase URL and anon key configuration. Keep this file out of public issue reports; the anon key is intended for browser use but must rely on correct RLS.
+- `supabase/functions/send-booking-email/index.ts` — existing Resend-backed booking notification Edge Function. This upgrade does not replace or rewrite it.
+- `supabase-schema.sql` — original database setup reference.
+- `supabase-enhancements.sql` — additive migration for homepage content, advertisements, private gallery and explicit admin access.
 
-### 1. Supabase (dashboard, content and file uploads)
-1. Create a project at https://supabase.com.
-2. Open SQL Editor and run all of `supabase-schema.sql`.
-3. In Authentication → Users, create the administrator account(s). Do not make public sign-up available.
-4. Copy Project URL and anon/public key from Project Settings → API.
-5. Copy `supabase-config.example.js` to `supabase-config.js`, then replace the two placeholder values.
-6. Copy `email-config.example.js` to `email-config.js` and configure it as described below.
-7. Deploy the whole folder to your hosting provider. Keep the config files beside `index.html`.
+## Existing booking workflow — preserved
 
-The dashboard uses Supabase Auth. Only users you create in Supabase Authentication can sign in. The SQL policies permit authenticated users to manage the dashboard content and files. For a production deployment with multiple staff roles, tighten these policies with an explicit admin-role table.
+The public consultation form still:
+1. Inserts the request into the existing `consultation_requests` table.
+2. Invokes the existing Supabase Edge Function `send-booking-email`.
+3. Relies on the existing Resend configuration held in Supabase Edge Function secrets.
 
-### 2. Email notifications for form submissions
-This version supports EmailJS for sending an email notification when the consultation form is submitted.
-1. Create an EmailJS account at https://www.emailjs.com and connect the mailbox that should receive consultation enquiries.
-2. Create an email template. Suggested subject: `New DermSystems consultation request — {{fullName}}`. Include these template variables in the message: `{{fullName}}`, `{{contactInfo}}`, `{{concern}}`, `{{otherDetails}}`, `{{prefDate}}`, `{{prefTime}}`, `{{contactMethod}}`, `{{submittedAt}}`.
-3. In the EmailJS template, set the **To Email** field to `{{to_email}}` (or set the recipient directly to `alinaguy1@gmail.com`).
-4. Copy the EmailJS Public Key, Service ID and Template ID into `email-config.js`. The notification recipient is already set to `alinaguy1@gmail.com` in this package.
-5. Test with a real submission and verify delivery and spam-folder handling.
+Do not replace the Edge Function, rotate its secrets, or configure EmailJS. The README in the original archive described EmailJS, but the actual `app.js` and deployed function source use the Resend-backed Edge Function. This README reflects the code in this upgraded archive.
 
-When Supabase is configured, each form submission is also saved in the `consultation_requests` table and appears in Admin → Consultation requests. Email delivery is not considered configured until valid EmailJS credentials are supplied. The browser displays an error rather than falsely claiming an email was sent.
+The new success dialog appears only after the existing form code reports success. No email provider or booking database schema has been replaced.
 
-### 3. Add PDFs and other content
-1. Sign in at `/admin.html`.
-2. Open File library and upload a PDF, image or video. Copy its public URL.
-3. Open Website content → Add content. Select Resource / PDF, add a title and description, paste the URL into Link / PDF URL, and publish.
-4. Testimonials, services, FAQs, articles, videos, links and announcements can be added from Website content. Published testimonials, services and resources appear in their matching public sections. Other content types are stored and managed in the dashboard and can be expanded into dedicated public sections later.
+## Admin features
 
-### 4. Local preview
-Serve the folder with a local web server (for example VS Code Live Server). Do not open the HTML file directly with `file://`, because Supabase auth and browser modules need an HTTP origin.
+- Existing website content manager for services, testimonials, resources, FAQs, articles, videos, links and announcements.
+- Homepage editor for key headings, descriptions, CTA text/destination and hero/founder images.
+- Social media links with platform-specific SVG marks and visibility controls.
+- Advertisement Manager with image, destination, placement, active state and optional start/end dates. Dismissal is remembered in the visitor's browser for seven days.
+- Private Gallery Manager with multi-image upload, category filtering, search, replacement and deletion. Gallery images are not public by default. Use **Publish copy** to deliberately copy an image to the existing public `dermsystems-assets` bucket and copy its public URL for use in a public section.
+- Custom booking success dialog.
 
-## Notes
-- Existing original copy, pricing ($45), checklist statements, audience groups, founder story, service descriptions, resource descriptions and three sample testimonial statements are preserved.
-- The existing image files and logo SVGs are retained.
-- No PDF documents were present in the uploaded archive, so no PDF has been silently invented or substituted.
-- The existing Google Apps Script form endpoint was not retained because the old script displayed a success state independently of the email result. This implementation provides explicit Supabase storage and EmailJS notification setup instead.
-- The website is a front-end deliverable. Supabase and EmailJS must be configured with the account credentials and recipient email before the dashboard and email delivery can operate on the live domain.
+## Before deploying: inspect and back up the live Supabase project
 
+The ZIP includes the project's supplied schema file, not a live database export. I cannot confirm the deployed project's actual tables, columns, policies, users, storage buckets or Edge Function secrets from these local files. Before applying SQL:
+1. In Supabase, take a database backup.
+2. Compare the live tables, columns, RLS policies and storage buckets with `supabase-schema.sql` and `supabase-enhancements.sql`.
+3. Confirm that the live `consultation_requests` columns match the existing booking insert.
+4. Confirm that `send-booking-email` is deployed and that its existing Resend secrets are present.
 
-### Manage social media icons and booking email
-Run the current `supabase-schema.sql` in your Supabase SQL Editor. Sign in to `/admin.html`, then open **Settings**. Update the booking notification email and save it. To manage social accounts, choose a platform (Instagram, Facebook, TikTok, LinkedIn, YouTube, X, Pinterest, WhatsApp, Threads, Snapchat or Website), paste its profile URL, and save. The matching icon is generated automatically and the links appear in the website footer. Add as many links as you need or remove any row before saving.
+Do not re-run the original `supabase-schema.sql` against an established production database without reviewing it first. It is a bootstrap schema, not a production migration.
 
-For booking email delivery, set the EmailJS template's **To Email** field to `{{to_email}}`; the form passes the current email saved in Admin as that variable.
+## Apply the enhancement migration
+
+After reviewing the live database, run `supabase-enhancements.sql` in Supabase SQL Editor.
+
+The migration creates:
+- `dermsystems_admins` — explicit allow-list for admin privileges.
+- `site_ads` — advertisement records.
+- `gallery_assets` — private gallery metadata.
+- `dermsystems-private-gallery` — private Supabase Storage bucket.
+- `homepage_content` key in the existing `site_settings` table, without overwriting an existing value.
+
+It also replaces the original broad authenticated-user management policies with policies that check `dermsystems_admins`. This is a security improvement, but it means you must register your administrator user before expecting dashboard data editing to work:
+
+1. Open Supabase → Authentication → Users.
+2. Copy the UUID of the existing administrator account.
+3. In SQL Editor, run the following statement with that UUID:
+
+```sql
+insert into public.dermsystems_admins (user_id)
+values ('PASTE-EXISTING-ADMIN-USER-UUID-HERE')
+on conflict (user_id) do nothing;
+```
+
+Never use a service-role key in the browser. The dashboard uses the existing anon key and Supabase Auth session; RLS enforces administrator permissions.
+
+The migration intentionally does not modify `send-booking-email` or its environment secrets. If your live policy names differ from the original supplied schema, review and adapt the migration before applying it. Do not run it blindly.
+
+## Configuration and deployment
+
+- Keep the existing `supabase-config.js` and Vercel project configuration.
+- Do not commit Supabase service-role keys, Resend API keys or other secrets.
+- The public browser configuration should contain only the Supabase project URL and anon/public key.
+- Upload the updated files to the existing GitHub repository, preserving its existing project root and Vercel settings.
+- Vercel should redeploy the existing project from the configured branch; do not create a second Vercel project.
+
+## Testing checklist
+
+Local source checks can verify syntax and markup, but they cannot prove the live Supabase policies, deployed Edge Function, Resend delivery or Vercel deployment. After applying the migration and deploying, test:
+
+- Public page, navigation and responsive layout.
+- Existing consultation form database insert and Edge Function invocation.
+- A real booking notification received through the existing Resend setup.
+- Admin sign-in and administrator-only CRUD.
+- Homepage copy and image changes.
+- Social link visibility and destinations.
+- Advertisement scheduling, placements and dismissal.
+- Private gallery upload, replacement, deletion and publish-copy action.
+- Form success dialog on successful submission and no success dialog on failure.
+
+Do not treat an email notification as tested until the real notification has been received.

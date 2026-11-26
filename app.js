@@ -70,9 +70,81 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadManagedContent();
   loadSiteSettings();
+  loadHomepageContent();
+  loadAdvertisements();
+  $('#successClose')?.addEventListener('click', closeSuccessPopup);
+  $('#successContinue')?.addEventListener('click', closeSuccessPopup);
+  $('#submissionSuccess')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeSuccessPopup();
+  });
 
   $('#consultationForm')?.addEventListener('submit', submitConsultation);
 });
+
+
+async function loadHomepageContent(){
+ if(!db)return;
+ try{
+  const {data,error}=await db.from('site_settings').select('value').eq('key','homepage_content').maybeSingle();
+  if(error)throw error;
+  const c=JSON.parse(data?.value||'{}');
+  const bindings={
+   hero_eyebrow:'.hero .eyebrow',hero_heading:'.hero h1',hero_description:'.hero-lead',hero_support:'.hero-support',
+   hero_button:'.hero .button',about_heading:'.intro h2',about_intro:'.intro-text',
+   about_paragraph_1:'.intro-grid>div p:nth-of-type(2)',about_paragraph_2:'.intro-grid>div p:nth-of-type(3)',
+   founder_heading:'.founder-copy h2',founder_bio_1:'.founder-copy>p:nth-of-type(2)',founder_bio_2:'.founder-copy>p:nth-of-type(3)',
+   session_heading:'.session-band h2',session_description:'.session-band>div>p:not(.eyebrow)',
+   booking_heading:'.booking-copy h2',booking_description:'.booking-copy>p:not(.eyebrow)',footer_tagline:'.footer>p',
+   intro_kicker:'.section-kicker',check_heading:'.check-heading h2',check_description:'.check-heading>p:last-child',
+   audience_heading:'.audience .section-heading h2',audience_description:'.audience .section-heading>p:last-child',
+   services_heading:'.services .section-heading h2',services_description:'.services .section-heading>p:last-child',
+   investment_heading:'.investment-copy h2',investment_description:'.investment-copy>p:not(.eyebrow)',
+   price_title:'.price-card h3',price_amount:'.price',price_note:'.price-note',
+   resources_heading:'.resources .section-heading h2',resources_description:'.resources .section-heading>p:last-child',
+   testimonials_heading:'.stories .section-heading h2',booking_eyebrow:'.booking-copy .eyebrow',
+   booking_privacy_note:'.booking-aside p',closing_heading:'.closing h2',closing_button:'.closing .button',
+   nav_approach:'.nav-links a[href="#approach"]',nav_services:'.nav-links a[href="#services"]',
+   nav_resources:'.nav-links a[href="#resources"]',nav_testimonials:'.nav-links a[href="#stories"]',
+   nav_booking:'.nav-links .nav-cta'
+  };
+  Object.entries(bindings).forEach(([key,selector])=>{const el=$(selector);if(el&&c[key])el.textContent=c[key];});
+  if(c.hero_button){const el=$('.hero .button');if(el)el.firstChild.textContent=c.hero_button+' ';}
+  if(c.hero_button_url){const el=$('.hero .button');if(el)el.href=c.hero_button_url;}
+  if(c.hero_image_url){const el=$('.hero-visual>img');if(el)el.src=c.hero_image_url;}
+  if(c.founder_image_url){const el=$('.founder-image img');if(el)el.src=c.founder_image_url;}
+  if(c.session_button){const el=$('.session-band .button');if(el)el.firstChild.textContent=c.session_button+' ';}
+  if(c.price_amount){const el=$('.price');if(el)el.textContent='$'+c.price_amount;}
+  if(c.closing_button){const el=$('.closing .button');if(el)el.firstChild.textContent=c.closing_button+' ';}
+ }catch(e){console.warn('Homepage content could not be loaded.',e.message);}
+}
+async function loadAdvertisements(){
+ if(!db)return;
+ try{
+  const {data,error}=await db.from('site_ads').select('*').eq('active',true);
+  if(error)throw error;
+  const now=Date.now();
+  const ad=(data||[]).find(a=>(!a.starts_at||new Date(a.starts_at).getTime()<=now)&&(!a.ends_at||new Date(a.ends_at).getTime()>=now)&&!adDismissed(a.id));
+  if(ad)renderAdvertisement(ad);
+ }catch(e){console.warn('Advertisements are unavailable until the enhancement migration is applied.',e.message);}
+}
+function adDismissed(id){try{return Number(localStorage.getItem(`dermsystems-ad-dismiss-${id}`)||0)>Date.now();}catch{return false;}}
+function renderAdvertisement(ad){
+ const root=document.createElement('aside');root.className=`ds-ad ds-ad-${ad.display_type}`;root.setAttribute('aria-label','Advertisement');
+ const close=document.createElement('button');close.type='button';close.className='ds-ad-close';close.setAttribute('aria-label','Dismiss advertisement');close.textContent='×';
+ close.addEventListener('click',()=>{try{localStorage.setItem(`dermsystems-ad-dismiss-${ad.id}`,String(Date.now()+7*24*60*60*1000));}catch{}root.remove();});
+ const content=document.createElement('div');content.className='ds-ad-content';
+ if(ad.image_url){const img=document.createElement('img');img.src=ad.image_url;img.alt='';content.appendChild(img);}
+ const copy=document.createElement('div');const heading=document.createElement('strong');heading.textContent=ad.title||'A note from DermSystems';copy.appendChild(heading);
+ if(ad.description){const p=document.createElement('p');p.textContent=ad.description;copy.appendChild(p);}
+ content.appendChild(copy);
+ if(ad.destination_url){const link=document.createElement('a');link.href=ad.destination_url;link.textContent='Learn more ↗';link.target='_blank';link.rel='noopener noreferrer';content.appendChild(link);}
+ root.append(close,content);document.body.appendChild(root);
+}
+function showSuccessPopup(){
+ const dialog=$('#submissionSuccess');if(!dialog)return;
+ if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+}
+function closeSuccessPopup(){const dialog=$('#submissionSuccess');if(dialog?.open)dialog.close();else dialog?.removeAttribute('open');}
 
 async function loadSiteSettings() {
   if (!db) return;
@@ -91,7 +163,6 @@ async function loadSiteSettings() {
 
     bookingNotificationEmail =
       settings.booking_notification_email ||
-      window.DERMSYSTEMS_EMAIL?.toEmail ||
       '';
 
     let links = [];
@@ -148,7 +219,7 @@ function renderSocialLinks(links) {
   }
 
   box.innerHTML = (links || [])
-    .filter(x => x.url)
+    .filter(x => x.url && x.visible !== false)
     .map(x => `
       <a href="${attr(x.url)}"
          target="_blank"
@@ -337,6 +408,7 @@ async function submitConsultation(e) {
 
     form.reset();
     $('#otherField').classList.add('hidden');
+    showSuccessPopup();
 
   } catch (err) {
     console.error('Consultation submission error:', err);

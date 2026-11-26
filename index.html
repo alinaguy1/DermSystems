@@ -10,8 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script src="supabase-config.js"></script><script src="email-config.js"></script>
+  <script src="supabase-config.js"></script>
 </head>
 <body>
 <header class="site-header"><a class="brand" href="#home"><img src="images/head-logo.svg" alt="DermSystems"></a>
@@ -56,4 +55,5 @@
 <section class="closing"><p class="eyebrow">DERMSYSTEMS</p><h2>Less confusion.<br><em>More confidence.</em></h2><a class="button button-light" href="#booking">Take the first step <span>↗</span></a></section>
 </main>
 <footer class="footer"><a href="#home"><img src="images/head-logo.svg" alt="DermSystems"></a><p>Skincare that fits your life.</p><div><a href="#approach">Our approach</a><a href="#services">Services</a><a href="#booking">Book a session</a></div><small>© <span id="year"></span> DermSystems. All rights reserved.</small></footer>
+<dialog id="submissionSuccess" class="success-dialog" aria-labelledby="successTitle"><button type="button" class="success-close" id="successClose" aria-label="Close">×</button><div class="success-mark" aria-hidden="true">✓</div><h2 id="successTitle">Thank you for reaching out!</h2><p>Your request has been received successfully. Our team will review your submission and get back to you shortly.</p><button type="button" class="button button-dark" id="successContinue">Continue browsing</button></dialog>
 <script src="app.js"></script></body></html>
