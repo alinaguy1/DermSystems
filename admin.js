@@ -14,11 +14,20 @@ document.addEventListener('DOMContentLoaded',async()=>{
   $('#galleryForm').addEventListener('submit',uploadGalleryImages);
   $('#gallerySearch').addEventListener('input',renderGallery);
   $('#galleryCategoryFilter').addEventListener('change',renderGallery);
- const {data}=await sb.auth.getSession();if(data.session){currentUser=data.session.user;showDashboard();}
- sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;if(currentUser)showDashboard();else showLogin();});
+ const {data}=await sb.auth.getSession();if(data.session){currentUser=data.session.user;await verifyAdminAndShowDashboard();}
+ sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;if(currentUser)verifyAdminAndShowDashboard();else showLogin();});
 });
 function showLogin(){$('#loginView').hidden=false;$('#dashboardView').hidden=true;}
-function showDashboard(){$('#loginView').hidden=true;$('#dashboardView').hidden=false;loadOverview();}
+async function verifyAdminAndShowDashboard(){
+ const {data,error}=await sb.rpc('is_dermsystems_admin');
+ if(error||data!==true){
+  showLogin();
+  $('#loginMessage').textContent='This account is not authorised to access the DermSystems admin dashboard.';
+  return;
+ }
+ $('#loginMessage').textContent='';
+ $('#loginView').hidden=true;$('#dashboardView').hidden=false;loadOverview();
+}
 async function login(e){e.preventDefault();$('#loginMessage').textContent='Signing in…';const {error}=await sb.auth.signInWithPassword({email:$('#loginEmail').value,password:$('#loginPassword').value});$('#loginMessage').textContent=error?error.message:'';}
 async function logout(){await sb.auth.signOut();showLogin();}
 function showTab(tab){$$('.side-link').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$$('.tab-panel').forEach(p=>p.hidden=true);$('#'+tab+'Tab').hidden=false;$('#pageTitle').textContent=({overview:'Overview',content:'Website content',homepage:'Homepage editor',ads:'Advertisement manager',gallery:'Gallery manager',bookings:'Consultation requests',uploads:'File library',settings:'Settings'})[tab];if(tab==='content')loadContent();if(tab==='bookings')loadBookings();if(tab==='uploads')loadAssets();if(tab==='settings')loadSettings();if(tab==='homepage')loadHomepageContent();if(tab==='ads')loadAds();if(tab==='gallery')loadGallery();}

@@ -4,7 +4,6 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 
 const cfg = window.DERMSYSTEMS_SUPABASE || {};
 let db = null;
-let bookingNotificationEmail = '';
 
 if (window.supabase && cfg.url && cfg.anonKey && !cfg.url.includes('YOUR_')) {
   db = window.supabase.createClient(cfg.url, cfg.anonKey);
@@ -153,17 +152,13 @@ async function loadSiteSettings() {
     const { data, error } = await db
       .from('site_settings')
       .select('key,value')
-      .in('key', ['booking_notification_email', 'social_links']);
+      .eq('key', 'social_links');
 
     if (error) throw error;
 
     const settings = Object.fromEntries(
       (data || []).map(x => [x.key, x.value])
     );
-
-    bookingNotificationEmail =
-      settings.booking_notification_email ||
-      '';
 
     let links = [];
 

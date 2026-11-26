@@ -5,15 +5,15 @@
 - `node --check admin.js` — passed.
 - Parsed `index.html` and `admin.html` with Python's HTML parser — passed.
 - Checked for duplicate HTML IDs — none found.
-- Checked literal JavaScript `#id` references against the corresponding HTML — no missing IDs (the footer social container is created dynamically).
+- Confirmed public website settings fetch only requests `social_links`; the booking notification email is no longer requested by public JavaScript.
+- Confirmed the admin page checks `is_dermsystems_admin()` before displaying the dashboard.
 - Confirmed the existing `send-booking-email` Edge Function source is byte-for-byte unchanged.
 - Confirmed the existing `supabase-config.js` and original `supabase-schema.sql` are byte-for-byte unchanged.
 - Confirmed original image and PDF assets remain in the project archive.
 
 ## Not verified in this environment
-- Live Supabase schema, actual production RLS policies, administrator accounts, storage buckets or records.
-- Supabase migration execution.
-- Admin login against the deployed Supabase project.
+- Live admin sign-in and dashboard access against the deployed Supabase project.
+- Execution of the additional `supabase-privacy-hardening.sql` policy patch.
 - Browser end-to-end behavior on Vercel.
 - Real booking insert and Resend email delivery.
 - Real ad upload, private gallery storage, or live publication.

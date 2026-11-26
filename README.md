@@ -93,3 +93,10 @@ Local source checks can verify syntax and markup, but they cannot prove the live
 - Form success dialog on successful submission and no success dialog on failure.
 
 Do not treat an email notification as tested until the real notification has been received.
+
+
+## Additional privacy hardening before deployment
+
+Run `supabase-privacy-hardening.sql` in the existing Supabase SQL Editor. It removes public read access to the `booking_notification_email` setting. The existing `send-booking-email` Edge Function reads that setting with its existing service-role secret, and the authenticated admin dashboard continues to manage it through the admin-only RLS policy. The public website now fetches only the social-links setting.
+
+The admin page also verifies `is_dermsystems_admin()` after sign-in before displaying the dashboard. RLS remains the actual database security boundary; this client-side check is an additional access-control and usability measure, not a substitute for RLS.
